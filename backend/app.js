@@ -1,7 +1,19 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
 
 const app = express();
+
+mongoose.connect('db-url', {useNewUrlParser: true})
+  .then(() => {
+    console.log('DB Connected!');
+  })
+  .catch(() => {
+    console.log('Connection failed!');
+  });
+
+const Post = require('./models/post');
+
 
 app.use(bodyParser.json());
 
@@ -13,25 +25,31 @@ app.use((req, res, next) => {
 });
 
 app.post('/api/posts', (req, res, next) => {
-  const post = req.body;
-  console.log(post);
-  res.status(201).json({
-    message: 'Post was successful!'
+  const post = new Post({
+    title: req.body.title,
+    content: req.body.content
+  });
+  post.save().then(result => {
+    res.status(201).json({
+      message: 'Post was successful!',
+      postId: result._id
+    });
   });
 });
 
-app.use('/api/posts', (req, res, next) => {
-  const posts = [
-    { id: 'adjklsajdksa',
-      title: 'First Hi',
-      content: 'Das ist eine Beschreibung.'},
-    { id: 'aa2dnsjnf',
-      title: 'Second Post',
-      content: 'Das ist eine Beschreibung.'}
-  ];
-  res.status(200).json({
-    message: 'Posts fetched successfully!',
-    posts: posts
+app.get('/api/posts', (req, res, next) => {
+  Post.find().then(documents => {
+    res.status(200).json({
+      message: 'Posts fetched successfully!',
+      posts: documents
+    });
+  });
+
+});
+
+app.delete('/api/posts/:id', (req, res, next) => {
+  Post.deleteOne({_id: req.params.id}).then(result => {
+    res.status(200).json({message: 'Deleted!'});
   });
 });
 
